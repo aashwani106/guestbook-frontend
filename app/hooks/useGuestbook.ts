@@ -7,6 +7,7 @@ import {
   Transaction,
   TransactionInstruction,
   SystemProgram,
+  type AccountMeta,
 } from "@solana/web3.js";
 import {
   getMessagePDA,
@@ -16,13 +17,19 @@ import {
 } from "../lib/instructions";
 import { PROGRAM_ID } from "../lib/constants";
 
- 
-function decodeMessageAccount(data: Buffer): string | null {
+export interface MessageEntry {
+  author: string;
+  message: string;
+  pubkey: string;
+}
+
+function decodeMessageAccountFull(data: Buffer): { author: string; message: string } | null {
   try {
-    const offset = 8 + 32; // skip discriminator + author pubkey
+    const author = new PublicKey(data.slice(8, 40)).toBase58();
+    const offset = 40;
     const strLen = data.readUInt32LE(offset);
     const message = data.slice(offset + 4, offset + 4 + strLen).toString("utf8");
-    return message;
+    return { author, message };
   } catch {
     return null;
   }
@@ -32,34 +39,39 @@ export function useGuestbook() {
   const { connection } = useConnection();
   const wallet = useWallet();
 
-  const [message, setMessage] = useState<string | null>(null);
+  const [allMessages, setAllMessages] = useState<MessageEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchMessage = useCallback(async () => {
-    if (!wallet.publicKey) return;
+  const fetchAllMessages = useCallback(async () => {
     setFetching(true);
+    setError(null);
     try {
-      const pda = await getMessagePDA(wallet.publicKey.toBase58());
-      const accountInfo = await connection.getAccountInfo(
-        new PublicKey(pda.toString())
-      );
-      if (!accountInfo) {
-        setMessage(null);
-        return;
-      }
-      const decoded = decodeMessageAccount(accountInfo.data as Buffer);
-      setMessage(decoded);
+      const programPubkey = new PublicKey(PROGRAM_ID);
+      const accounts = await connection.getProgramAccounts(programPubkey);
+      const messages = accounts
+        .map(({ pubkey, account }) => {
+          const decoded = decodeMessageAccountFull(account.data as Buffer);
+          if (!decoded) return null;
+          return {
+            author: decoded.author,
+            message: decoded.message,
+            pubkey: pubkey.toBase58(),
+          };
+        })
+        .filter((m): m is MessageEntry => m !== null);
+      setAllMessages(messages);
     } catch {
-      setMessage(null);
+      setError("Failed to load messages");
+      setAllMessages([]);
     } finally {
       setFetching(false);
     }
-  }, [wallet.publicKey, connection]);
+  }, [connection]);
 
-  // Generic transaction sender
   const sendTransaction = useCallback(
-    async (data: Uint8Array, extraAccounts: any[]) => {
+    async (data: Uint8Array, extraAccounts: AccountMeta[]) => {
       if (!wallet.publicKey || !wallet.signTransaction) return;
       setLoading(true);
       try {
@@ -70,16 +82,8 @@ export function useGuestbook() {
         const ix = new TransactionInstruction({
           programId: programPubkey,
           keys: [
-            {
-              pubkey: wallet.publicKey,
-              isSigner: true,
-              isWritable: true,
-            },
-            {
-              pubkey: pdaPubkey,
-              isSigner: false,
-              isWritable: true,
-            },
+            { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
+            { pubkey: pdaPubkey, isSigner: false, isWritable: true },
             ...extraAccounts,
           ],
           data: Buffer.from(data),
@@ -95,24 +99,19 @@ export function useGuestbook() {
         const sig = await connection.sendRawTransaction(signed.serialize());
         await connection.confirmTransaction(sig, "confirmed");
 
-        await fetchMessage();
+        await fetchAllMessages();
       } finally {
         setLoading(false);
       }
     },
-    [wallet, connection, fetchMessage]
+    [wallet, connection, fetchAllMessages]
   );
 
   const createMessage = useCallback(
     async (text: string) => {
       const data = buildCreateMessageData(text);
-      // createMessage needs SystemProgram as 3rd account
       await sendTransaction(data, [
-        {
-          pubkey: SystemProgram.programId,
-          isSigner: false,
-          isWritable: false,
-        },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
       ]);
     },
     [sendTransaction]
@@ -121,26 +120,35 @@ export function useGuestbook() {
   const updateMessage = useCallback(
     async (text: string) => {
       const data = buildUpdateMessageData(text);
-      await sendTransaction(data, []); // no extra accounts for update
+      await sendTransaction(data, []);
     },
     [sendTransaction]
   );
 
   const deleteMessage = useCallback(async () => {
     const data = buildDeleteMessageData();
-    await sendTransaction(data, []); // no extra accounts for delete
+    await sendTransaction(data, []);
   }, [sendTransaction]);
 
   useEffect(() => {
-    fetchMessage();
-  }, [fetchMessage]);
+    const id = setTimeout(() => fetchAllMessages(), 0);
+    return () => clearTimeout(id);
+  }, [fetchAllMessages]);
+
+  const myAddress = wallet.publicKey?.toBase58();
+  const myMessage = myAddress
+    ? allMessages.find((m) => m.author === myAddress) ?? null
+    : null;
 
   return {
-    message,
+    allMessages,
+    myMessage,
     loading,
     fetching,
+    error,
     createMessage,
     updateMessage,
     deleteMessage,
+    refetch: fetchAllMessages,
   };
 }
