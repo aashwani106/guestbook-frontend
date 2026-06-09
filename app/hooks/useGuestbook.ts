@@ -18,6 +18,7 @@ import {
 import { PROGRAM_ID } from "../lib/constants";
 
 export interface MessageEntry {
+  id: number;
   author: string;
   message: string;
   pubkey: string;
@@ -45,13 +46,15 @@ function getTransactionErrorMessage(err: unknown) {
   return "Transaction failed. Please try again.";
 }
 
-function decodeMessageAccountFull(data: Buffer): { author: string; message: string } | null {
+function decodeMessageAccountFull(data: Buffer): { id: number; author: string; message: string } | null {
   try {
     const author = new PublicKey(data.slice(8, 40)).toBase58();
-    const offset = 40;
-    const strLen = data.readUInt32LE(offset);
-    const message = data.slice(offset + 4, offset + 4 + strLen).toString("utf8");
-    return { author, message };
+    const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+    const id = Number(view.getBigUint64(40, true));
+    const strLen = view.getUint32(48, true);
+    if (strLen > 280 || 52 + strLen > data.length) return null;
+    const message = data.slice(52, 52 + strLen).toString("utf8");
+    return { id, author, message };
   } catch {
     return null;
   }
@@ -82,6 +85,7 @@ export function useGuestbook() {
           );
 
           return {
+            id: decoded.id,
             author: decoded.author,
             message: decoded.message,
             pubkey: pubkey.toBase58(),
@@ -104,7 +108,7 @@ export function useGuestbook() {
   }, [connection]);
 
   const sendTransaction = useCallback(
-    async (data: Uint8Array, extraAccounts: AccountMeta[]) => {
+    async (data: Uint8Array, extraAccounts: AccountMeta[], messageId: number) => {
       if (!wallet.publicKey || !wallet.signTransaction) {
         setError("Connect a wallet before sending a transaction");
         return false;
@@ -114,7 +118,7 @@ export function useGuestbook() {
       setError(null);
 
       try {
-        const pda = await getMessagePDA(wallet.publicKey.toBase58());
+        const pda = await getMessagePDA(wallet.publicKey.toBase58(), messageId);
         const pdaPubkey = new PublicKey(pda.toString());
         const programPubkey = new PublicKey(PROGRAM_ID);
 
@@ -152,25 +156,26 @@ export function useGuestbook() {
 
   const createMessage = useCallback(
     async (text: string) => {
-      const data = buildCreateMessageData(text);
+      const messageId = Date.now();
+      const data = buildCreateMessageData(messageId, text);
       return sendTransaction(data, [
         { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-      ]);
+      ], messageId);
     },
     [sendTransaction]
   );
 
   const updateMessage = useCallback(
-    async (text: string) => {
-      const data = buildUpdateMessageData(text);
-      return sendTransaction(data, []);
+    async (messageId: number, text: string) => {
+      const data = buildUpdateMessageData(messageId, text);
+      return sendTransaction(data, [], messageId);
     },
     [sendTransaction]
   );
 
-  const deleteMessage = useCallback(async () => {
-    const data = buildDeleteMessageData();
-    return sendTransaction(data, []);
+  const deleteMessage = useCallback(async (messageId: number) => {
+    const data = buildDeleteMessageData(messageId);
+    return sendTransaction(data, [], messageId);
   }, [sendTransaction]);
 
   useEffect(() => {
@@ -178,14 +183,8 @@ export function useGuestbook() {
     return () => clearTimeout(id);
   }, [fetchAllMessages]);
 
-  const myAddress = wallet.publicKey?.toBase58();
-  const myMessage = myAddress
-    ? allMessages.find((m) => m.author === myAddress) ?? null
-    : null;
-
   return {
     allMessages,
-    myMessage,
     loading,
     fetching,
     error,

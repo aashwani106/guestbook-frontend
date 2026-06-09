@@ -63,7 +63,6 @@ export default function Home() {
   const [editInput, setEditInput] = useState("");
 
   const myAddress = publicKey?.toBase58();
-  const myMessage = allMessages.find((m) => m.author === myAddress) ?? null;
   const latestMessage = allMessages.at(-1);
 
   const handleCreate = async () => {
@@ -73,18 +72,21 @@ export default function Home() {
   };
 
   const handleUpdate = async () => {
-    if (!editInput.trim()) return;
-    const didUpdate = await updateMessage(editInput.trim());
+    if (!editInput.trim() || !editingPubkey) return;
+    const msg = allMessages.find((m) => m.pubkey === editingPubkey);
+    if (!msg) return;
+    const didUpdate = await updateMessage(msg.id, editInput.trim());
     if (didUpdate) {
       setEditingPubkey(null);
       setEditInput("");
     }
   };
 
-  const handleDelete = async () => {
-    const didDelete = await deleteMessage();
+  const handleDelete = async (pubkey: string) => {
+    const msg = allMessages.find((m) => m.pubkey === pubkey);
+    if (!msg) return;
+    const didDelete = await deleteMessage(msg.id);
     if (didDelete) {
-      setInput("");
       setEditingPubkey(null);
       setEditInput("");
     }
@@ -359,7 +361,7 @@ export default function Home() {
                             Edit
                           </button>
                           <button
-                            onClick={handleDelete}
+                            onClick={() => handleDelete(msg.pubkey)}
                             disabled={loading}
                             className="text-xs font-black uppercase tracking-[0.12em] text-[#b44a3f] transition hover:text-[#7c241d] disabled:opacity-50"
                           >
@@ -386,11 +388,6 @@ export default function Home() {
             <div className="border-t border-black/10 bg-[#fffaf0] p-4 sm:p-5">
               {connected ? (
                 <div className="rounded-[22px] border border-black/10 bg-white p-3 shadow-[6px_6px_0_rgba(23,26,33,0.1)]">
-                  {myMessage && (
-                    <p className="mb-2 line-clamp-1 text-xs font-bold text-[#686a62]">
-                      Current message: &ldquo;{myMessage.message}&rdquo;
-                    </p>
-                  )}
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                     <textarea
                       className="min-h-20 flex-1 resize-none rounded-[18px] bg-[#f1ecdf] p-4 text-sm font-semibold text-[#171a21] outline-none transition placeholder:text-[#8f928a] focus-visible:ring-2 focus-visible:ring-[#3dd6c4]"

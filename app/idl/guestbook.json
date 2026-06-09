@@ -1,301 +1,342 @@
 {
-    "address": "DtPyeMVaKZCMvyexKPGvEGEHb4h4zUtjnCo1HsFaTF6o",
-    "metadata": {
-      "name": "guestbook",
-      "version": "0.1.0",
-      "spec": "0.1.0",
-      "description": "Created with Anchor"
+  "address": "DtPyeMVaKZCMvyexKPGvEGEHb4h4zUtjnCo1HsFaTF6o",
+  "metadata": {
+    "name": "guestbook",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "create_message",
+      "discriminator": [
+        234,
+        159,
+        7,
+        241,
+        215,
+        17,
+        188,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "message_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  115,
+                  115,
+                  97,
+                  103,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              },
+              {
+                "kind": "arg",
+                "path": "message_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "message_id",
+          "type": "u64"
+        },
+        {
+          "name": "message",
+          "type": "string"
+        }
+      ]
     },
-    "instructions": [
-      {
-        "name": "create_message",
-        "discriminator": [
-          234,
-          159,
-          7,
-          241,
-          215,
-          17,
-          188,
-          237
-        ],
-        "accounts": [
-          {
-            "name": "authority",
-            "writable": true,
-            "signer": true
-          },
-          {
-            "name": "message_account",
-            "writable": true,
-            "pda": {
-              "seeds": [
-                {
-                  "kind": "const",
-                  "value": [
-                    109,
-                    101,
-                    115,
-                    115,
-                    97,
-                    103,
-                    101
-                  ]
-                },
-                {
-                  "kind": "account",
-                  "path": "authority"
-                }
-              ]
-            }
-          },
-          {
-            "name": "system_program",
-            "address": "11111111111111111111111111111111"
+    {
+      "name": "delete_message",
+      "discriminator": [
+        198,
+        99,
+        22,
+        204,
+        200,
+        165,
+        54,
+        138
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "message_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  115,
+                  115,
+                  97,
+                  103,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              },
+              {
+                "kind": "arg",
+                "path": "message_id"
+              }
+            ]
           }
-        ],
-        "args": [
+        }
+      ],
+      "args": [
+        {
+          "name": "message_id",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "update_message",
+      "discriminator": [
+        23,
+        135,
+        34,
+        211,
+        96,
+        120,
+        107,
+        9
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "message_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  115,
+                  115,
+                  97,
+                  103,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              },
+              {
+                "kind": "arg",
+                "path": "message_id"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "message_id",
+          "type": "u64"
+        },
+        {
+          "name": "message",
+          "type": "string"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "MessageAccount",
+      "discriminator": [
+        97,
+        144,
+        24,
+        58,
+        225,
+        40,
+        89,
+        223
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "MessageCreated",
+      "discriminator": [
+        236,
+        110,
+        177,
+        39,
+        91,
+        53,
+        14,
+        195
+      ]
+    },
+    {
+      "name": "MessageDeleted",
+      "discriminator": [
+        100,
+        213,
+        172,
+        129,
+        17,
+        208,
+        177,
+        23
+      ]
+    },
+    {
+      "name": "MessageUpdated",
+      "discriminator": [
+        135,
+        180,
+        24,
+        179,
+        125,
+        127,
+        171,
+        148
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "Unauthorized",
+      "msg": "Bhen ke laude hadd me reh chutiye tera message nhi hai"
+    },
+    {
+      "code": 6001,
+      "name": "MessageTooLong",
+      "msg": "abey laude kam kr"
+    }
+  ],
+  "types": [
+    {
+      "name": "MessageAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "author",
+            "type": "pubkey"
+          },
+          {
+            "name": "id",
+            "type": "u64"
+          },
+          {
+            "name": "message",
+            "type": "string"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MessageCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "author",
+            "type": "pubkey"
+          },
+          {
+            "name": "id",
+            "type": "u64"
+          },
           {
             "name": "message",
             "type": "string"
           }
         ]
-      },
-      {
-        "name": "delete_message",
-        "discriminator": [
-          198,
-          99,
-          22,
-          204,
-          200,
-          165,
-          54,
-          138
-        ],
-        "accounts": [
+      }
+    },
+    {
+      "name": "MessageDeleted",
+      "type": {
+        "kind": "struct",
+        "fields": [
           {
-            "name": "authority",
-            "writable": true,
-            "signer": true
+            "name": "author",
+            "type": "pubkey"
           },
           {
-            "name": "message_account",
-            "writable": true,
-            "pda": {
-              "seeds": [
-                {
-                  "kind": "const",
-                  "value": [
-                    109,
-                    101,
-                    115,
-                    115,
-                    97,
-                    103,
-                    101
-                  ]
-                },
-                {
-                  "kind": "account",
-                  "path": "authority"
-                }
-              ]
-            }
+            "name": "id",
+            "type": "u64"
           }
-        ],
-        "args": []
-      },
-      {
-        "name": "update_message",
-        "discriminator": [
-          23,
-          135,
-          34,
-          211,
-          96,
-          120,
-          107,
-          9
-        ],
-        "accounts": [
+        ]
+      }
+    },
+    {
+      "name": "MessageUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
           {
-            "name": "authority",
-            "writable": true,
-            "signer": true
+            "name": "author",
+            "type": "pubkey"
           },
           {
-            "name": "message_account",
-            "writable": true,
-            "pda": {
-              "seeds": [
-                {
-                  "kind": "const",
-                  "value": [
-                    109,
-                    101,
-                    115,
-                    115,
-                    97,
-                    103,
-                    101
-                  ]
-                },
-                {
-                  "kind": "account",
-                  "path": "authority"
-                }
-              ]
-            }
-          }
-        ],
-        "args": [
+            "name": "id",
+            "type": "u64"
+          },
           {
             "name": "message",
             "type": "string"
           }
         ]
       }
-    ],
-    "accounts": [
-      {
-        "name": "MessageAccount",
-        "discriminator": [
-          97,
-          144,
-          24,
-          58,
-          225,
-          40,
-          89,
-          223
-        ]
-      }
-    ],
-    "events": [
-      {
-        "name": "MessageCreated",
-        "discriminator": [
-          236,
-          110,
-          177,
-          39,
-          91,
-          53,
-          14,
-          195
-        ]
-      },
-      {
-        "name": "MessageDeleted",
-        "discriminator": [
-          100,
-          213,
-          172,
-          129,
-          17,
-          208,
-          177,
-          23
-        ]
-      },
-      {
-        "name": "MessageUpdated",
-        "discriminator": [
-          135,
-          180,
-          24,
-          179,
-          125,
-          127,
-          171,
-          148
-        ]
-      }
-    ],
-    "errors": [
-      {
-        "code": 6000,
-        "name": "Unauthorized",
-        "msg": "Bhen ke laude hadd me reh chutiye tera message nhi hai"
-      },
-      {
-        "code": 6001,
-        "name": "MessageTooLong",
-        "msg": "abey laude kam kr"
-      }
-    ],
-    "types": [
-      {
-        "name": "MessageAccount",
-        "type": {
-          "kind": "struct",
-          "fields": [
-            {
-              "name": "author",
-              "type": "pubkey"
-            },
-            {
-              "name": "message",
-              "type": "string"
-            },
-            {
-              "name": "bump",
-              "type": "u8"
-            }
-          ]
-        }
-      },
-      {
-        "name": "MessageCreated",
-        "type": {
-          "kind": "struct",
-          "fields": [
-            {
-              "name": "author",
-              "type": "pubkey"
-            },
-            {
-              "name": "message",
-              "type": "string"
-            }
-          ]
-        }
-      },
-      {
-        "name": "MessageDeleted",
-        "type": {
-          "kind": "struct",
-          "fields": [
-            {
-              "name": "author",
-              "type": "pubkey"
-            }
-          ]
-        }
-      },
-      {
-        "name": "MessageUpdated",
-        "type": {
-          "kind": "struct",
-          "fields": [
-            {
-              "name": "author",
-              "type": "pubkey"
-            },
-            {
-              "name": "message",
-              "type": "string"
-            }
-          ]
-        }
-      }
-    ],
-    "constants": [
-      {
-        "name": "SEED",
-        "type": "string",
-        "value": "\"anchor\""
-      }
-    ]
-  }
+    }
+  ],
+  "constants": [
+    {
+      "name": "SEED",
+      "type": "string",
+      "value": "\"anchor\""
+    }
+  ]
+}
