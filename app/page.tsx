@@ -25,17 +25,22 @@ function truncateAddress(address: string) {
 
 function addressColor(address: string): string {
   const colors = [
-    "from-violet-500 to-purple-600",
-    "from-emerald-500 to-teal-600",
-    "from-amber-500 to-orange-600",
-    "from-rose-500 to-pink-600",
-    "from-cyan-500 to-blue-600",
-    "from-lime-500 to-green-600",
-    "from-fuchsia-500 to-purple-600",
-    "from-sky-500 to-indigo-600",
+    "from-teal-300 to-cyan-500",
+    "from-amber-300 to-orange-500",
+    "from-rose-300 to-pink-500",
+    "from-lime-300 to-emerald-500",
+    "from-sky-300 to-blue-500",
+    "from-fuchsia-300 to-violet-500",
+    "from-stone-200 to-zinc-500",
+    "from-red-300 to-rose-500",
   ];
   const hash = address.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
   return colors[hash % colors.length];
+}
+
+function messageInitial(address: string) {
+  const first = address.replace(/[^a-zA-Z0-9]/g, "").charAt(0);
+  return first ? first.toUpperCase() : "#";
 }
 
 export default function Home() {
@@ -59,6 +64,7 @@ export default function Home() {
 
   const myAddress = publicKey?.toBase58();
   const myMessage = allMessages.find((m) => m.author === myAddress) ?? null;
+  const latestMessage = allMessages.at(-1);
 
   const handleCreate = async () => {
     if (!input.trim()) return;
@@ -86,199 +92,339 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-950">
-      <div className="mx-auto max-w-7xl px-4 py-12">
-        <div className="mb-12 text-center">
-          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-purple-400 to-violet-300 bg-clip-text text-transparent">
-            Guestbook
-          </h1>
-          <p className="text-gray-500 text-sm">
-            Leave a message on Solana devnet
-          </p>
-        </div>
+    <main className="min-h-screen overflow-hidden bg-[#101217] text-[#f5f2e8]">
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(255,180,91,0.14),transparent_30%),radial-gradient(circle_at_84%_18%,rgba(61,214,196,0.12),transparent_30%),linear-gradient(135deg,rgba(255,255,255,0.05),transparent_28%)]" />
 
-        <div className="flex flex-col items-center mb-12">
+      <div className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-4 sm:px-6 lg:px-8">
+        <header className="flex flex-col gap-4 border-b border-white/10 pb-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="grid size-11 place-items-center rounded-[14px] border border-white/15 bg-[#f5f2e8] text-lg font-black text-[#101217] shadow-[6px_6px_0_rgba(0,0,0,0.28)]">
+              G
+            </div>
+            <div>
+              <h1 className="text-2xl font-black tracking-normal sm:text-3xl">
+                Guestbook
+              </h1>
+              <p className="text-sm font-medium text-[#a9aa9f]">
+                Solana devnet message room
+              </p>
+            </div>
+          </div>
+
           {hydrated && (
-            <div className="mb-8 [&_.wallet-adapter-button]:!bg-white/10 [&_.wallet-adapter-button]:!backdrop-blur-xl [&_.wallet-adapter-button]:!border [&_.wallet-adapter-button]:!border-white/10 [&_.wallet-adapter-button]:!rounded-xl [&_.wallet-adapter-button]:!h-11 [&_.wallet-adapter-button]:!text-sm [&_.wallet-adapter-button]:!font-medium [&_.wallet-adapter-button:hover]:!bg-white/20 [&_.wallet-adapter-button]:!transition-all [&_.wallet-adapter-button-start-icon]:!mr-2">
+            <div className="wallet-shell [&_.wallet-adapter-button]:!h-11 [&_.wallet-adapter-button]:!rounded-[14px] [&_.wallet-adapter-button]:!border [&_.wallet-adapter-button]:!border-white/15 [&_.wallet-adapter-button]:!bg-[#20242d] [&_.wallet-adapter-button]:!px-4 [&_.wallet-adapter-button]:!text-sm [&_.wallet-adapter-button]:!font-bold [&_.wallet-adapter-button]:!text-[#f5f2e8] [&_.wallet-adapter-button]:!shadow-[4px_4px_0_rgba(0,0,0,0.3)] [&_.wallet-adapter-button]:!transition [&_.wallet-adapter-button:hover]:!translate-x-0.5 [&_.wallet-adapter-button:hover]:!translate-y-0.5 [&_.wallet-adapter-button:hover]:!bg-[#2d3440] [&_.wallet-adapter-button:hover]:!shadow-[2px_2px_0_rgba(0,0,0,0.35)] [&_.wallet-adapter-button-start-icon]:!mr-2">
               <WalletMultiButton />
             </div>
           )}
+        </header>
 
-          {connected && (
-            <div className="w-full max-w-lg bg-white/[0.03] backdrop-blur-xl rounded-2xl p-6 border border-white/10 space-y-4 shadow-[0_0_30px_-10px_rgba(168,85,247,0.15)]">
-              <p className="text-xs font-medium text-gray-400 tracking-wide uppercase">
-                Create message
-              </p>
-              <textarea
-                className="w-full bg-white/5 rounded-xl p-3.5 text-sm text-white placeholder:text-gray-600 resize-none outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50 transition-all"
-                rows={3}
-                placeholder="Write your message... (max 280 chars)"
-                maxLength={280}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-              />
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-600 font-mono">
-                  {input.length}/280
-                </span>
-                <button
-                  onClick={handleCreate}
-                  disabled={loading || !input.trim()}
-                  className="px-5 py-2 text-sm font-medium rounded-xl bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-500 hover:to-violet-500 disabled:opacity-40 text-white transition-all focus-visible:ring-2 focus-visible:ring-purple-400/50 shadow-[0_0_20px_-5px_rgba(168,85,247,0.3)]"
-                >
-                  {loading ? "Sending..." : "Post Message"}
-                </button>
-              </div>
-              {myMessage && (
-                <p className="text-xs text-gray-600 italic">
-                  Currently: &ldquo;{myMessage.message}&rdquo;
+        <div className="grid flex-1 gap-4 py-4 lg:grid-cols-[320px_minmax(0,1fr)]">
+          <aside className="flex min-h-0 flex-col rounded-[20px] border border-white/10 bg-[#171a21]/85 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur">
+            <div className="border-b border-white/10 p-4">
+              <div className="mb-4 flex items-center justify-between">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#ffcc7a]">
+                  Channels
                 </p>
-              )}
+                <span className="rounded-full bg-[#2a2f39] px-2.5 py-1 text-xs font-black text-[#f5f2e8]">
+                  {allMessages.length}
+                </span>
+              </div>
+
+              <div className="rounded-[16px] border border-[#3dd6c4]/30 bg-[#1f2a2f] p-3 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03)]">
+                <div className="flex items-center gap-3">
+                  <div className="grid size-10 place-items-center rounded-full bg-[#3dd6c4] text-sm font-black text-[#101217]">
+                    #
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-black">devnet-lobby</p>
+                    <p className="truncate text-xs font-medium text-[#a9aa9f]">
+                      {latestMessage
+                        ? latestMessage.message
+                        : "Waiting for the first signature"}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
-        </div>
 
-        <section>
-          <div className="flex items-center gap-3 mb-6">
-            <h2 className="text-lg font-semibold text-gray-300">
-              Messages
-            </h2>
-            <span className="text-xs text-gray-600 bg-white/[0.04] px-2.5 py-1 rounded-full font-mono">
-              {allMessages.length}
-            </span>
-          </div>
+            <div className="min-h-0 flex-1 space-y-3 overflow-auto p-4">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#8f928a]">
+                Recent signers
+              </p>
 
-          {fetching && allMessages.length === 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Array.from({ length: 6 }).map((_, i) => (
+              {allMessages.length === 0 && (
+                <div className="rounded-[16px] border border-dashed border-white/15 p-4 text-sm text-[#a9aa9f]">
+                  No wallet has left a note yet.
+                </div>
+              )}
+
+              {allMessages.slice(-6).map((msg) => (
                 <div
-                  key={i}
-                  className="h-40 rounded-2xl bg-white/[0.03] animate-pulse border border-white/5"
-                />
+                  key={msg.pubkey}
+                  className="flex items-center gap-3 rounded-[14px] px-2 py-2 transition hover:bg-white/[0.04]"
+                >
+                  <div
+                    className={`grid size-9 shrink-0 place-items-center rounded-full bg-gradient-to-br ${addressColor(
+                      msg.author
+                    )} text-xs font-black text-white shadow-lg`}
+                  >
+                    {messageInitial(msg.author)}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate font-mono text-xs font-bold text-[#f5f2e8]">
+                      {truncateAddress(msg.author)}
+                    </p>
+                    <p className="truncate text-xs font-medium text-[#8f928a]">
+                      {msg.message}
+                    </p>
+                  </div>
+                </div>
               ))}
             </div>
-          )}
 
-          {error && (
-            <div className="rounded-2xl bg-red-500/10 border border-red-500/20 p-5 max-w-lg mx-auto">
-              <p className="text-sm text-red-400">{error}</p>
+            <div className="border-t border-white/10 p-4">
+              <div className="rounded-[16px] bg-[#101217] p-3">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-[#8f928a]">
+                  Status
+                </p>
+                <p className="mt-1 text-sm font-bold text-[#f5f2e8]">
+                  {connected ? "Wallet connected" : "Read-only mode"}
+                </p>
+                {myAddress && (
+                  <p className="mt-1 truncate font-mono text-xs text-[#a9aa9f]">
+                    {truncateAddress(myAddress)}
+                  </p>
+                )}
+              </div>
+            </div>
+          </aside>
+
+          <section className="flex min-h-[72vh] flex-col overflow-hidden rounded-[24px] border border-white/10 bg-[#f5f2e8] text-[#171a21] shadow-[0_30px_100px_rgba(0,0,0,0.32)]">
+            <div className="flex flex-col gap-3 border-b border-black/10 bg-[#fffaf0] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+              <div className="flex items-center gap-3">
+                <div className="grid size-11 place-items-center rounded-full bg-[#171a21] text-sm font-black text-[#ffcc7a]">
+                  #
+                </div>
+                <div>
+                  <h2 className="text-lg font-black">devnet-lobby</h2>
+                  <p className="text-sm font-semibold text-[#686a62]">
+                    {fetching ? "Syncing messages" : `${allMessages.length} messages on-chain`}
+                  </p>
+                </div>
+              </div>
+
               <button
                 onClick={refetch}
-                className="mt-2.5 text-sm text-red-300 hover:text-red-200 underline underline-offset-2 transition focus-visible:ring-2 focus-visible:ring-red-400/50"
+                disabled={fetching}
+                className="h-10 rounded-[14px] border border-black/10 bg-white px-4 text-sm font-black text-[#171a21] shadow-[3px_3px_0_rgba(23,26,33,0.16)] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[1px_1px_0_rgba(23,26,33,0.22)] disabled:opacity-50"
               >
-                Try again
+                {fetching ? "Syncing" : "Refresh"}
               </button>
             </div>
-          )}
 
-          {!fetching && allMessages.length === 0 && !error && (
-            <div className="text-center py-20 text-gray-600 space-y-3">
-              <div className="text-5xl">💬</div>
-              <p className="text-sm font-medium">No messages yet</p>
-              {!connected && (
-                <p className="text-xs">Connect your wallet to be the first!</p>
+            <div className="chat-scroll min-h-0 flex-1 space-y-5 overflow-auto bg-[linear-gradient(rgba(23,26,33,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(23,26,33,0.045)_1px,transparent_1px)] bg-[size:28px_28px] px-4 py-6 sm:px-6">
+              {fetching && allMessages.length === 0 && (
+                <div className="space-y-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={`h-20 w-3/4 animate-pulse rounded-[22px] bg-black/10 ${
+                        i % 2 === 0 ? "mr-auto" : "ml-auto"
+                      }`}
+                    />
+                  ))}
+                </div>
               )}
-            </div>
-          )}
 
-          {allMessages.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {error && (
+                <div className="mx-auto max-w-md rounded-[18px] border border-red-300 bg-red-50 p-4 text-center">
+                  <p className="text-sm font-bold text-red-700">{error}</p>
+                  <button
+                    onClick={refetch}
+                    className="mt-3 rounded-full bg-red-600 px-4 py-2 text-sm font-black text-white"
+                  >
+                    Try again
+                  </button>
+                </div>
+              )}
+
+              {!fetching && allMessages.length === 0 && !error && (
+                <div className="mx-auto grid h-full max-w-sm place-items-center text-center">
+                  <div>
+                    <div className="mx-auto mb-4 grid size-16 place-items-center rounded-[20px] bg-[#171a21] text-2xl font-black text-[#ffcc7a] shadow-[6px_6px_0_rgba(23,26,33,0.18)]">
+                      #
+                    </div>
+                    <p className="text-lg font-black">Quiet room</p>
+                    <p className="mt-1 text-sm font-semibold text-[#686a62]">
+                      Connect a wallet and put the first message on devnet.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {allMessages.map((msg) => {
                 const isOwn = msg.author === myAddress;
                 const isEditing = editingPubkey === msg.pubkey;
 
                 return (
-                  <div
+                  <article
                     key={msg.pubkey}
-                    className={`group relative rounded-2xl p-5 border transition-all duration-200 flex flex-col ${
-                      isOwn
-                        ? "bg-gradient-to-br from-purple-500/[0.07] to-violet-500/[0.03] border-purple-500/25 shadow-[0_0_25px_-8px_rgba(168,85,247,0.15)] hover:shadow-[0_0_30px_-5px_rgba(168,85,247,0.2)]"
-                        : "bg-white/[0.03] border-white/[0.06] hover:bg-white/[0.05] hover:border-white/[0.1]"
+                    className={`flex items-end gap-3 ${
+                      isOwn ? "justify-end" : "justify-start"
                     }`}
                   >
-                    <div className="flex items-center gap-3 mb-3">
+                    {!isOwn && (
                       <div
-                        className={`w-8 h-8 rounded-full bg-gradient-to-br ${addressColor(msg.author)} flex items-center justify-center text-[11px] font-bold text-white shrink-0 shadow-lg`}
+                        className={`grid size-10 shrink-0 place-items-center rounded-full bg-gradient-to-br ${addressColor(
+                          msg.author
+                        )} text-sm font-black text-white shadow-md`}
                       >
-                        {msg.author.charAt(0).toUpperCase()}
+                        {messageInitial(msg.author)}
                       </div>
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-xs font-mono text-gray-500 truncate">
-                          {truncateAddress(msg.author)}
+                    )}
+
+                    <div
+                      className={`max-w-[min(36rem,82%)] ${
+                        isOwn ? "items-end" : "items-start"
+                      } flex flex-col gap-1`}
+                    >
+                      <div className="flex items-center gap-2 px-1">
+                        <span className="font-mono text-[11px] font-black uppercase tracking-[0.08em] text-[#686a62]">
+                          {isOwn ? "You" : truncateAddress(msg.author)}
                         </span>
                         {isOwn && (
-                          <span className="text-[10px] font-semibold uppercase tracking-wider text-purple-400 bg-purple-500/15 px-2 py-0.5 rounded-full shrink-0">
-                            You
+                          <span className="rounded-full bg-[#3dd6c4]/25 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-[#0a756e]">
+                            Owner
                           </span>
                         )}
                       </div>
-                    </div>
 
-                    {isEditing ? (
-                      <div className="space-y-3 flex-1 flex flex-col">
-                        <textarea
-                          className="w-full bg-white/5 rounded-xl p-3 text-sm text-white placeholder:text-gray-600 resize-none outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50 transition-all flex-1"
-                          rows={3}
-                          maxLength={280}
-                          value={editInput}
-                          onChange={(e) => setEditInput(e.target.value)}
-                          autoFocus
-                        />
-                        <div className="flex gap-2 mt-auto">
+                      <div
+                        className={`rounded-[24px] px-4 py-3 shadow-[5px_5px_0_rgba(23,26,33,0.12)] ${
+                          isOwn
+                            ? "rounded-br-[6px] bg-[#2b3039] text-[#fffaf0]"
+                            : "rounded-bl-[6px] border border-black/10 bg-white text-[#171a21]"
+                        }`}
+                      >
+                        {isEditing ? (
+                          <div className="space-y-3">
+                            <textarea
+                              className="min-h-24 w-full resize-none rounded-[16px] border border-black/10 bg-white p-3 text-sm font-semibold text-[#171a21] outline-none transition focus-visible:ring-2 focus-visible:ring-[#3dd6c4]"
+                              maxLength={280}
+                              value={editInput}
+                              onChange={(e) => setEditInput(e.target.value)}
+                              autoFocus
+                            />
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <span className="font-mono text-xs font-bold text-[#a9aa9f]">
+                                {editInput.length}/280
+                              </span>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => {
+                                    setEditingPubkey(null);
+                                    setEditInput("");
+                                  }}
+                                  className="rounded-full bg-black/10 px-4 py-2 text-sm font-black text-[#171a21]"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={handleUpdate}
+                                  disabled={loading || !editInput.trim()}
+                                  className="rounded-full bg-[#3dd6c4] px-4 py-2 text-sm font-black text-[#101217] disabled:opacity-50"
+                                >
+                                  {loading ? "Saving" : "Save"}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="whitespace-pre-wrap break-words text-[15px] font-semibold leading-relaxed">
+                            {msg.message}
+                          </p>
+                        )}
+                      </div>
+
+                      {isOwn && !isEditing && (
+                        <div className="flex gap-2 px-1 pt-1">
                           <button
-                            onClick={handleUpdate}
-                            disabled={loading || !editInput.trim()}
-                            className="flex-1 py-2 text-sm font-medium rounded-xl bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-500 hover:to-violet-500 disabled:opacity-40 text-white transition-all focus-visible:ring-2 focus-visible:ring-purple-400/50"
+                            onClick={() => startEdit(msg)}
+                            className="text-xs font-black uppercase tracking-[0.12em] text-[#686a62] transition hover:text-[#171a21]"
                           >
-                            {loading ? "Saving..." : "Save"}
+                            Edit
                           </button>
                           <button
-                            onClick={() => {
-                              setEditingPubkey(null);
-                              setEditInput("");
-                            }}
-                            className="flex-1 py-2 text-sm font-medium rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all focus-visible:ring-2 focus-visible:ring-white/20"
+                            onClick={handleDelete}
+                            disabled={loading}
+                            className="text-xs font-black uppercase tracking-[0.12em] text-[#b44a3f] transition hover:text-[#7c241d] disabled:opacity-50"
                           >
-                            Cancel
+                            {loading ? "Deleting" : "Delete"}
                           </button>
                         </div>
+                      )}
+                    </div>
+
+                    {isOwn && (
+                      <div
+                        className={`grid size-10 shrink-0 place-items-center rounded-full bg-gradient-to-br ${addressColor(
+                          msg.author
+                        )} text-sm font-black text-white shadow-md`}
+                      >
+                        {messageInitial(msg.author)}
                       </div>
-                    ) : (
-                      <>
-                        <p className="text-sm text-gray-200 leading-relaxed flex-1">
-                          {msg.message}
-                        </p>
-                        {isOwn && (
-                          <div className="flex gap-2 mt-4 pt-3 border-t border-white/[0.06]">
-                            <button
-                              onClick={() => startEdit(msg)}
-                              className="flex-1 py-2 text-sm font-medium rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all focus-visible:ring-2 focus-visible:ring-white/20"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={handleDelete}
-                              disabled={loading}
-                              className="flex-1 py-2 text-sm font-medium rounded-xl bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 disabled:opacity-40 transition-all focus-visible:ring-2 focus-visible:ring-red-400/50"
-                            >
-                              {loading ? "Deleting..." : "Delete"}
-                            </button>
-                          </div>
-                        )}
-                      </>
                     )}
-                  </div>
+                  </article>
                 );
               })}
             </div>
-          )}
-        </section>
 
-        {!connected && hydrated && (
-          <p className="text-gray-600 text-sm mt-12 text-center">
-            Connect your wallet to post a message
-          </p>
-        )}
+            <div className="border-t border-black/10 bg-[#fffaf0] p-4 sm:p-5">
+              {connected ? (
+                <div className="rounded-[22px] border border-black/10 bg-white p-3 shadow-[6px_6px_0_rgba(23,26,33,0.1)]">
+                  {myMessage && (
+                    <p className="mb-2 line-clamp-1 text-xs font-bold text-[#686a62]">
+                      Current message: &ldquo;{myMessage.message}&rdquo;
+                    </p>
+                  )}
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                    <textarea
+                      className="min-h-20 flex-1 resize-none rounded-[18px] bg-[#f1ecdf] p-4 text-sm font-semibold text-[#171a21] outline-none transition placeholder:text-[#8f928a] focus-visible:ring-2 focus-visible:ring-[#3dd6c4]"
+                      placeholder="Write a devnet message..."
+                      maxLength={280}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                    />
+                    <div className="flex items-center justify-between gap-3 sm:flex-col sm:items-end">
+                      <span className="font-mono text-xs font-black text-[#8f928a]">
+                        {input.length}/280
+                      </span>
+                      <button
+                        onClick={handleCreate}
+                        disabled={loading || !input.trim()}
+                        className="h-12 rounded-[16px] bg-[#ffcc7a] px-5 text-sm font-black text-[#171a21] shadow-[4px_4px_0_rgba(23,26,33,0.22)] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0_rgba(23,26,33,0.26)] disabled:opacity-50"
+                      >
+                        {loading ? "Sending" : "Send"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3 rounded-[22px] border border-dashed border-black/20 bg-white/70 p-4 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
+                  <div>
+                    <p className="font-black text-[#171a21]">Posting is locked</p>
+                    <p className="text-sm font-semibold text-[#686a62]">
+                      Connect your wallet to add your message to the room.
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-[#171a21] px-4 py-2 text-sm font-black text-[#ffcc7a]">
+                    Wallet required
+                  </span>
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
       </div>
     </main>
   );
