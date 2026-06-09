@@ -68,22 +68,26 @@ export default function Home() {
 
   const handleCreate = async () => {
     if (!input.trim()) return;
-    await createMessage(input.trim());
-    setInput("");
+    const didCreate = await createMessage(input.trim());
+    if (didCreate) setInput("");
   };
 
   const handleUpdate = async () => {
     if (!editInput.trim()) return;
-    await updateMessage(editInput.trim());
-    setEditingPubkey(null);
-    setEditInput("");
+    const didUpdate = await updateMessage(editInput.trim());
+    if (didUpdate) {
+      setEditingPubkey(null);
+      setEditInput("");
+    }
   };
 
   const handleDelete = async () => {
-    await deleteMessage();
-    setInput("");
-    setEditingPubkey(null);
-    setEditInput("");
+    const didDelete = await deleteMessage();
+    if (didDelete) {
+      setInput("");
+      setEditingPubkey(null);
+      setEditInput("");
+    }
   };
 
   const startEdit = (msg: { pubkey: string; message: string }) => {

@@ -21,6 +21,28 @@ export interface MessageEntry {
   author: string;
   message: string;
   pubkey: string;
+  sortKey: number;
+}
+
+function getTransactionErrorMessage(err: unknown) {
+  if (err && typeof err === "object") {
+    const maybeError = err as { code?: unknown; message?: unknown; name?: unknown };
+    const message =
+      typeof maybeError.message === "string" ? maybeError.message : "";
+    const name = typeof maybeError.name === "string" ? maybeError.name : "";
+
+    if (
+      maybeError.code === 4001 ||
+      name.includes("WalletSignTransactionError") ||
+      message.toLowerCase().includes("user rejected")
+    ) {
+      return "Transaction cancelled in wallet";
+    }
+
+    if (message) return message;
+  }
+
+  return "Transaction failed. Please try again.";
 }
 
 function decodeMessageAccountFull(data: Buffer): { author: string; message: string } | null {
@@ -50,18 +72,29 @@ export function useGuestbook() {
     try {
       const programPubkey = new PublicKey(PROGRAM_ID);
       const accounts = await connection.getProgramAccounts(programPubkey);
-      const messages = accounts
-        .map(({ pubkey, account }) => {
+      const messages = await Promise.all(
+        accounts.map(async ({ pubkey, account }) => {
           const decoded = decodeMessageAccountFull(account.data as Buffer);
           if (!decoded) return null;
+          const [latestSignature] = await connection.getSignaturesForAddress(
+            pubkey,
+            { limit: 1 }
+          );
+
           return {
             author: decoded.author,
             message: decoded.message,
             pubkey: pubkey.toBase58(),
+            sortKey: latestSignature?.slot ?? Number.MAX_SAFE_INTEGER,
           };
         })
-        .filter((m): m is MessageEntry => m !== null);
-      setAllMessages(messages);
+      );
+
+      setAllMessages(
+        messages
+          .filter((m): m is MessageEntry => m !== null)
+          .sort((a, b) => a.sortKey - b.sortKey)
+      );
     } catch {
       setError("Failed to load messages");
       setAllMessages([]);
@@ -72,8 +105,14 @@ export function useGuestbook() {
 
   const sendTransaction = useCallback(
     async (data: Uint8Array, extraAccounts: AccountMeta[]) => {
-      if (!wallet.publicKey || !wallet.signTransaction) return;
+      if (!wallet.publicKey || !wallet.signTransaction) {
+        setError("Connect a wallet before sending a transaction");
+        return false;
+      }
+
       setLoading(true);
+      setError(null);
+
       try {
         const pda = await getMessagePDA(wallet.publicKey.toBase58());
         const pdaPubkey = new PublicKey(pda.toString());
@@ -100,6 +139,10 @@ export function useGuestbook() {
         await connection.confirmTransaction(sig, "confirmed");
 
         await fetchAllMessages();
+        return true;
+      } catch (err) {
+        setError(getTransactionErrorMessage(err));
+        return false;
       } finally {
         setLoading(false);
       }
@@ -110,7 +153,7 @@ export function useGuestbook() {
   const createMessage = useCallback(
     async (text: string) => {
       const data = buildCreateMessageData(text);
-      await sendTransaction(data, [
+      return sendTransaction(data, [
         { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
       ]);
     },
@@ -120,14 +163,14 @@ export function useGuestbook() {
   const updateMessage = useCallback(
     async (text: string) => {
       const data = buildUpdateMessageData(text);
-      await sendTransaction(data, []);
+      return sendTransaction(data, []);
     },
     [sendTransaction]
   );
 
   const deleteMessage = useCallback(async () => {
     const data = buildDeleteMessageData();
-    await sendTransaction(data, []);
+    return sendTransaction(data, []);
   }, [sendTransaction]);
 
   useEffect(() => {
